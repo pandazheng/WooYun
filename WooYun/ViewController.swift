@@ -15,13 +15,26 @@ class ViewController: UIViewController , UITableViewDataSource , UITableViewDele
     
     @IBOutlet weak var tableView : UITableView!
     
+    var refreshControl = UIRefreshControl()
+    
     let Url = "http://apis.baidu.com/apistore/wooyun/submit"
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
+        refreshControl.addTarget(self, action: "refreshData", forControlEvents: UIControlEvents.ValueChanged)
+        refreshControl.attributedTitle = NSAttributedString(string: "松开后自动刷新")
+        tableView.addSubview(refreshControl)
+        
         loadData()
+    }
+    
+    //刷新数据
+    func refreshData()
+    {
+        loadData()
+        self.refreshControl.endRefreshing()
     }
 
     override func didReceiveMemoryWarning() {
@@ -36,11 +49,15 @@ class ViewController: UIViewController , UITableViewDataSource , UITableViewDele
         req.HTTPMethod = "GET"
         req.addValue("185a9b7258461613d884d37e9954c83b", forHTTPHeaderField: "apikey")
         NSURLConnection.sendAsynchronousRequest(req, queue: NSOperationQueue.mainQueue()) { (response : NSURLResponse!, data : NSData!, error : NSError!) -> Void in
-            let res = response as! NSHTTPURLResponse
-            println(res.statusCode)
+            //let res = response as! NSHTTPURLResponse
+            //println(res.statusCode)
             if let e = error
             {
-                println("请求失败")
+                //println("请求失败")
+                //alert 请求失败
+                let controller = UIAlertController(title: "警告", message: "请求失败", preferredStyle: UIAlertControllerStyle.Alert)
+                controller.addAction(UIAlertAction(title: "确定", style: UIAlertActionStyle.Default, handler: nil))
+                self.presentViewController(controller, animated: true, completion: nil)
             }
             
             if let d = data
@@ -50,7 +67,7 @@ class ViewController: UIViewController , UITableViewDataSource , UITableViewDele
                 if let ds = json as? NSArray
                 {
                     self.dataBug = NSArray(array: ds)
-                    println(self.dataBug)
+                    //println(self.dataBug)
                     self.tableView.reloadData()              //一定要记住重载tableView
                 }
             }
@@ -71,8 +88,8 @@ class ViewController: UIViewController , UITableViewDataSource , UITableViewDele
         var date = cell.viewWithTag(4) as! UILabel
         
         title.text = cellData["title"] as? String
-        println(cellData["user_harmlevel"]!)
-        println(cellData["corp_harmlevel"]!)
+        //println(cellData["user_harmlevel"]!)
+        //println(cellData["corp_harmlevel"]!)
         //user_harmlevel.text = cellData["user_harmlevel"] as? String
         let user_level = cellData["user_harmlevel"] as? String
         user_harmlevel.text = "用户等级: " + user_level!
@@ -87,6 +104,16 @@ class ViewController: UIViewController , UITableViewDataSource , UITableViewDele
     
     func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
         return 80
+    }
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        if segue.identifier == "goToDetail"
+        {
+            let indexPath = self.tableView.indexPathForSelectedRow()
+            let cellData = self.dataBug[indexPath!.row] as! NSDictionary
+            let webViewDetailController = segue.destinationViewController as! DetailViewController
+            webViewDetailController.detailUrl = cellData["link"] as? String
+        }
     }
 
 }
