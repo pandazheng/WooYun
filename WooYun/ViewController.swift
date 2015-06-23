@@ -7,12 +7,21 @@
 //
 
 import UIKit
+import Alamofire
 
-class ViewController: UIViewController {
-
+class ViewController: UIViewController , UITableViewDataSource , UITableViewDelegate{
+    
+    var dataBug : NSArray = NSArray()
+    
+    @IBOutlet weak var tableView : UITableView!
+    
+    let Url = "http://apis.baidu.com/apistore/wooyun/submit"
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        loadData()
     }
 
     override func didReceiveMemoryWarning() {
@@ -20,6 +29,65 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
 
+    func loadData()
+    {
+        var req = NSMutableURLRequest(URL: NSURL(string: Url)!)
+        req.timeoutInterval = 6
+        req.HTTPMethod = "GET"
+        req.addValue("185a9b7258461613d884d37e9954c83b", forHTTPHeaderField: "apikey")
+        NSURLConnection.sendAsynchronousRequest(req, queue: NSOperationQueue.mainQueue()) { (response : NSURLResponse!, data : NSData!, error : NSError!) -> Void in
+            let res = response as! NSHTTPURLResponse
+            println(res.statusCode)
+            if let e = error
+            {
+                println("请求失败")
+            }
+            
+            if let d = data
+            {
+                //println(d)
+                let json : AnyObject! = NSJSONSerialization.JSONObjectWithData(d, options: NSJSONReadingOptions.AllowFragments, error: nil)
+                if let ds = json as? NSArray
+                {
+                    self.dataBug = NSArray(array: ds)
+                    println(self.dataBug)
+                    self.tableView.reloadData()              //一定要记住重载tableView
+                }
+            }
+        }
+    }
+    
+    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return dataBug.count
+    }
+    
+    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier("DetailCell", forIndexPath: indexPath) as! UITableViewCell
+        let cellData : NSDictionary = self.dataBug[indexPath.row] as! NSDictionary
+        
+        var title = cell.viewWithTag(1) as! UILabel
+        var user_harmlevel = cell.viewWithTag(2) as! UILabel
+        var corp_harmlevel = cell.viewWithTag(3) as! UILabel
+        var date = cell.viewWithTag(4) as! UILabel
+        
+        title.text = cellData["title"] as? String
+        println(cellData["user_harmlevel"]!)
+        println(cellData["corp_harmlevel"]!)
+        //user_harmlevel.text = cellData["user_harmlevel"] as? String
+        let user_level = cellData["user_harmlevel"] as? String
+        user_harmlevel.text = "用户等级: " + user_level!
+        //corp_harmlevel.text = cellData["corp_harmlevel"] as? String
+        let corp_level = cellData["corp_harmlevel"] as? String
+        corp_harmlevel.text = "厂商等级: " + corp_level!
+        date.text = cellData["date"] as? String
+        //cell.textLabel?.text = cellData["title"] as? String
+        
+        return cell
+    }
+    
+    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+        return 80
+    }
 
 }
 
